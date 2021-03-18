@@ -1,5 +1,7 @@
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.Random;
@@ -25,25 +27,27 @@ public class WSGenerator {
     } 
 
     // Generate word soup
-    public static void wsGen(ArrayList<String> wordList, int size){
+    public static char[][] wsGen(ArrayList<String> wordList, int size){
         char[][] wordSoup = new char[size][size];
         int[][][] vrfy = new int[size][size][wordList.size()];
         for(int i = 0 ; i < wordList.size() ; i++){
             boolean fits = false;
             String word = wordList.get(i).toUpperCase();
-            System.out.println(word);
+            //System.out.println(word);
             while(!fits){
                 int[] cords = generateCords(size);
                 int x = cords[0];
                 int y = cords[1];
                 String ori = generateOri();
                 int len =  word.length();
-                int original = len; 
-                switch("Down") {
-                    case "DownLeft":
+                int original = len;
+                int ox = x;
+                int oy = y; 
+                switch(ori) {
+                    case "UpRight":
                                     while(len != 0) {
                                         if(x >= 0 && x < size && y >= 0 && y < size && (wordSoup[x][y] == 0 || wordSoup[x][y] == word.charAt(len - 1))){
-                                            wordSoup[x][y] = word.charAt(len - 1);
+                                            vrfy[x][y][i] = 1;
                                             x++;
                                             y--;
                                             len--;
@@ -52,27 +56,7 @@ public class WSGenerator {
                                                 x--;
                                                 y++;
                                                 len++;
-                                                wordSoup[x][y] = 0;
-                                            }
-                                            fits = false;
-                                            break;
-                                        }
-                                        fits = true;
-                                    }
-                                    break;
-                    case "Down":
-                                    while(len != 0) {
-                                        if(x >= 0 && x < size && y >= 0 && y < size && (wordSoup[x][y] == 0 || wordSoup[x][y] == word.charAt(len - 1))){
-                                            wordSoup[x][y] = word.charAt(len - 1);
-                                            vrfy[x][y][i] = 1;
-                                            x++;
-                                            len--;
-                                        }else{
-                                            while(len != original){
-                                                x--;
-                                                len++;
                                                 vrfy[x][y][i] = 0;
-                                                wordSoup[x][y] = 0;
                                             }
                                             fits = false;
                                             break;
@@ -82,38 +66,107 @@ public class WSGenerator {
 
                                     // Check if any word nests the new one in the same position
                                     if(fits){
-                                        System.out.println("Try: " + word + " in " + x + "," + y);
                                         for (int w = 0; w < i; w++) {
-                                            System.out.println(i);
-                                            int ox = x;
-                                            int oy = y;
-                                            int olen = len;
+                                            x = ox;
+                                            y = oy;
+                                            len = original;
                                             int count = 0;
-
-                                            while (olen != original) {
-                                                ox--;
-                                                olen++;
-                                                if (vrfy[ox][oy][w] == 1)
-                                                    count++;
+                                            while (len != 0) {
+                                                if (vrfy[ox][oy][w] == 1) count++;
+                                                x++;
+                                                y--;
+                                                len--;
                                             }
+
                                             if (count == original) {
-                                                System.out.println("NESTED");
-                                                while (len != original) {
-                                                    x--;
-                                                    len++;
+                                                //System.out.println("NESTED");
+                                                x = ox;
+                                                y = oy;
+                                                len = original;
+                                                while (len != 0) {
                                                     vrfy[x][y][i] = 0;
-                                                    wordSoup[x][y] = 0;
+                                                    x++;
+                                                    y--;
+                                                    len--;
                                                 }
                                                 fits = false;
                                                 break;
                                             }
                                         }
+                                        if(fits){
+                                            x = ox;
+                                            y = oy;
+                                            len = original;
+                                            while (len != 0) {
+                                                wordSoup[x][y] = word.charAt(len - 1);
+                                                x++;
+                                                y--;
+                                                len--;
+                                            }
+                                        }
                                     }
                                     break;
-                    case "DownRight":
+                    case "Up":
                                     while(len != 0) {
                                         if(x >= 0 && x < size && y >= 0 && y < size && (wordSoup[x][y] == 0 || wordSoup[x][y] == word.charAt(len - 1))){
-                                            wordSoup[x][y] = word.charAt(len - 1);
+                                            vrfy[x][y][i] = 1;
+                                            x++;
+                                            len--;
+                                        }else{
+                                            while(len != original){
+                                                x--;
+                                                len++;
+                                                vrfy[x][y][i] = 0;
+                                            }
+                                            fits = false;
+                                            break;
+                                        }
+                                        fits = true;
+                                    }
+
+                                    // Check if any word nests the new one in the same position
+                                    if(fits){
+                                        for (int w = 0; w < i; w++) {
+                                            x = ox;
+                                            y = oy;
+                                            len = original;
+                                            int count = 0;
+                                            while (len != 0) {
+                                                if (vrfy[ox][oy][w] == 1) count++;
+                                                x++;
+                                                len--;
+                                            }
+
+                                            if (count == original) {
+                                                //System.out.println("NESTED");
+                                                x = ox;
+                                                y = oy;
+                                                len = original;
+                                                while (len != 0) {
+                                                    vrfy[x][y][i] = 0;
+                                                    x++;
+                                                    len--;
+                                                }
+                                                fits = false;
+                                                break;
+                                            }
+                                        }
+                                        if(fits){
+                                            x = ox;
+                                            y = oy;
+                                            len = original;
+                                            while (len != 0) {
+                                                wordSoup[x][y] = word.charAt(len - 1);
+                                                x++;
+                                                len--;
+                                            }
+                                        }
+                                    }
+                                    break;
+                    case "UpLeft":
+                                    while(len != 0) {
+                                        if(x >= 0 && x < size && y >= 0 && y < size && (wordSoup[x][y] == 0 || wordSoup[x][y] == word.charAt(len - 1))){
+                                            vrfy[x][y][i] = 1;
                                             x++;
                                             y++;
                                             len--;
@@ -122,18 +175,60 @@ public class WSGenerator {
                                                 x--;
                                                 y--;
                                                 len++;
-                                                wordSoup[x][y] = 0;
+                                                vrfy[x][y][i] = 0;
                                             }
                                             fits = false;
                                             break;
                                         }
                                         fits = true;
                                     }
+
+                                    // Check if any word nests the new one in the same position
+                                    if(fits){
+                                        for (int w = 0; w < i; w++) {
+                                            x = ox;
+                                            y = oy;
+                                            len = original;
+                                            int count = 0;
+                                            while (len != 0) {
+                                                if (vrfy[ox][oy][w] == 1) count++;
+                                                x++;
+                                                y++;
+                                                len--;
+                                            }
+
+                                            if (count == original) {
+                                                //System.out.println("NESTED");
+                                                x = ox;
+                                                y = oy;
+                                                len = original;
+                                                while (len != 0) {
+                                                    vrfy[x][y][i] = 0;
+                                                    x++;
+                                                    y++;
+                                                    len--;
+                                                }
+                                                fits = false;
+                                                break;
+                                            }
+                                        }
+                                        if(fits){
+                                            x = ox;
+                                            y = oy;
+                                            len = original;
+                                            while (len != 0) {
+                                                wordSoup[x][y] = word.charAt(len - 1);
+                                                x++;
+                                                y++;
+                                                len--;
+                                            }
+                                        }
+                                    }
                                     break;
-                    case "UpLeft":
+                    case "DownRight":
                                     while(len != 0) {
                                         if(x >= 0 && x < size && y >= 0 && y < size && (wordSoup[x][y] == 0 || wordSoup[x][y] == word.charAt(len - 1))){
-                                            wordSoup[x][y] = word.charAt(len - 1);
+                                            vrfy[x][y][i] = 1;
                                             x--;
                                             y--;
                                             len--;
@@ -142,36 +237,117 @@ public class WSGenerator {
                                                 x++;
                                                 y++;
                                                 len++;
-                                                wordSoup[x][y] = 0;
+                                                vrfy[x][y][i] = 0;
                                             }
                                             fits = false;
                                             break;
                                         }
                                         fits = true;
                                     }
+
+                                    // Check if any word nests the new one in the same position
+                                    if(fits){
+                                        for (int w = 0; w < i; w++) {
+                                            x = ox;
+                                            y = oy;
+                                            len = original;
+                                            int count = 0;
+                                            while (len != 0) {
+                                                if (vrfy[ox][oy][w] == 1) count++;
+                                                x--;
+                                                y--;
+                                                len--;
+                                            }
+
+                                            if (count == original) {
+                                                //System.out.println("NESTED");
+                                                x = ox;
+                                                y = oy;
+                                                len = original;
+                                                while (len != 0) {
+                                                    vrfy[x][y][i] = 0;
+                                                    x--;
+                                                    y--;
+                                                    len--;
+                                                }
+                                                fits = false;
+                                                break;
+                                            }
+                                        }
+                                        if(fits){
+                                            x = ox;
+                                            y = oy;
+                                            len = original;
+                                            while (len != 0) {
+                                                wordSoup[x][y] = word.charAt(len - 1);
+                                                x--;
+                                                y--;
+                                                len--;
+                                            }
+                                        }
+                                    }
                                     break;
-                    case "Up":
+                    case "Down":
                                     while(len != 0) {
                                         if(x >= 0 && x < size && y >= 0 && y < size && (wordSoup[x][y] == 0 || wordSoup[x][y] == word.charAt(len - 1))){
-                                            wordSoup[x][y] = word.charAt(len - 1);
+                                            vrfy[x][y][i] = 1;
                                             x--;
                                             len--;
                                         }else{
                                             while(len != original){
                                                 x++;
                                                 len++;
-                                                wordSoup[x][y] = 0;
+                                                vrfy[x][y][i] = 0;
                                             }
                                             fits = false;
                                             break;
                                         }
                                         fits = true;
                                     }
-                                    break;
-                    case "UpRight":
+
+                                    // Check if any word nests the new one in the same position
+                                    if(fits){
+                                        for (int w = 0; w < i; w++) {
+                                            x = ox;
+                                            y = oy;
+                                            len = original;
+                                            int count = 0;
+                                            while (len != 0) {
+                                                if (vrfy[ox][oy][w] == 1) count++;
+                                                x--;
+                                                len--;
+                                            }
+
+                                            if (count == original) {
+                                                //System.out.println("NESTED");
+                                                x = ox;
+                                                y = oy;
+                                                len = original;
+                                                while (len != 0) {
+                                                    vrfy[x][y][i] = 0;
+                                                    x--;
+                                                    len--;
+                                                }
+                                                fits = false;
+                                                break;
+                                            }
+                                        }
+                                        if(fits){
+                                            x = ox;
+                                            y = oy;
+                                            len = original;
+                                            while (len != 0) {
+                                                wordSoup[x][y] = word.charAt(len - 1);
+                                                x--;
+                                                len--;
+                                            }
+                                        }
+                                    }
+                                    break;   
+                    case "DownLeft":
                                     while(len != 0) {
                                         if(x >= 0 && x < size && y >= 0 && y < size && (wordSoup[x][y] == 0 || wordSoup[x][y] == word.charAt(len - 1))){
-                                            wordSoup[x][y] = word.charAt(len - 1);
+                                            vrfy[x][y][i] = 1;
                                             x--;
                                             y++;
                                             len--;
@@ -180,54 +356,174 @@ public class WSGenerator {
                                                 x++;
                                                 y--;
                                                 len++;
-                                                wordSoup[x][y] = 0;
+                                                vrfy[x][y][i] = 0;
                                             }
                                             fits = false;
                                             break;
                                         }
                                         fits = true;
                                     }
-                                    break;
-                    case "Left":
-                                    while(len != 0) {
-                                        if(x >= 0 && x < size && y >= 0 && y < size && (wordSoup[x][y] == 0 || wordSoup[x][y] == word.charAt(len - 1))){
-                                            wordSoup[x][y] = word.charAt(len - 1);
-                                            y--;
-                                            len--;
-                                        }else{
-                                            while(len != original){
+
+                                    // Check if any word nests the new one in the same position
+                                    if(fits){
+                                        for (int w = 0; w < i; w++) {
+                                            x = ox;
+                                            y = oy;
+                                            len = original;
+                                            int count = 0;
+                                            while (len != 0) {
+                                                if (vrfy[ox][oy][w] == 1) count++;
+                                                x--;
                                                 y++;
-                                                len++;
-                                                wordSoup[x][y] = 0;
+                                                len--;
                                             }
-                                            fits = false;
-                                            break;
+
+                                            if (count == original) {
+                                                //System.out.println("NESTED");
+                                                x = ox;
+                                                y = oy;
+                                                len = original;
+                                                while (len != 0) {
+                                                    vrfy[x][y][i] = 0;
+                                                    x--;
+                                                    y++;
+                                                    len--;
+                                                }
+                                                fits = false;
+                                                break;
+                                            }
                                         }
-                                        fits = true;
+                                        if(fits){
+                                            x = ox;
+                                            y = oy;
+                                            len = original;
+                                            while (len != 0) {
+                                                wordSoup[x][y] = word.charAt(len - 1);
+                                                x--;
+                                                y++;
+                                                len--;
+                                            }
+                                        }
                                     }
-                                    break;
+                                    break; 
                     case "Right":
                                     while(len != 0) {
                                         if(x >= 0 && x < size && y >= 0 && y < size && (wordSoup[x][y] == 0 || wordSoup[x][y] == word.charAt(len - 1))){
-                                            wordSoup[x][y] = word.charAt(len - 1);
-                                            y++;
+                                            vrfy[x][y][i] = 1;
+                                            y--;
                                             len--;
                                         }else{
                                             while(len != original){
-                                                y--;
+                                                y++;
                                                 len++;
-                                                wordSoup[x][y] = 0;
+                                                vrfy[x][y][i] = 0;
                                             }
                                             fits = false;
                                             break;
                                         }
                                         fits = true;
                                     }
-                                    break;
+
+                                    // Check if any word nests the new one in the same position
+                                    if(fits){
+                                        for (int w = 0; w < i; w++) {
+                                            x = ox;
+                                            y = oy;
+                                            len = original;
+                                            int count = 0;
+                                            while (len != 0) {
+                                                if (vrfy[ox][oy][w] == 1) count++;
+                                                y--;
+                                                len--;
+                                            }
+
+                                            if (count == original) {
+                                                //System.out.println("NESTED");
+                                                x = ox;
+                                                y = oy;
+                                                len = original;
+                                                while (len != 0) {
+                                                    vrfy[x][y][i] = 0;
+                                                    y--;
+                                                    len--;
+                                                }
+                                                fits = false;
+                                                break;
+                                            }
+                                        }
+                                        if(fits){
+                                            x = ox;
+                                            y = oy;
+                                            len = original;
+                                            while (len != 0) {
+                                                wordSoup[x][y] = word.charAt(len - 1);
+                                                y--;
+                                                len--;
+                                            }
+                                        }
+                                    }
+                                    break; 
+                    case "Left":
+                                    while(len != 0) {
+                                        if(x >= 0 && x < size && y >= 0 && y < size && (wordSoup[x][y] == 0 || wordSoup[x][y] == word.charAt(len - 1))){
+                                            vrfy[x][y][i] = 1;
+                                            y++;
+                                            len--;
+                                        }else{
+                                            while(len != original){
+                                                y--;
+                                                len++;
+                                                vrfy[x][y][i] = 0;
+                                            }
+                                            fits = false;
+                                            break;
+                                        }
+                                        fits = true;
+                                    }
+
+                                    // Check if any word nests the new one in the same position
+                                    if(fits){
+                                        for (int w = 0; w < i; w++) {
+                                            x = ox;
+                                            y = oy;
+                                            len = original;
+                                            int count = 0;
+                                            while (len != 0) {
+                                                if (vrfy[ox][oy][w] == 1) count++;
+                                                y++;
+                                                len--;
+                                            }
+
+                                            if (count == original) {
+                                                //System.out.println("NESTED");
+                                                x = ox;
+                                                y = oy;
+                                                len = original;
+                                                while (len != 0) {
+                                                    vrfy[x][y][i] = 0;
+                                                    y++;
+                                                    len--;
+                                                }
+                                                fits = false;
+                                                break;
+                                            }
+                                        }
+                                        if(fits){
+                                            x = ox;
+                                            y = oy;
+                                            len = original;
+                                            while (len != 0) {
+                                                wordSoup[x][y] = word.charAt(len - 1);
+                                                y++;
+                                                len--;
+                                            }
+                                        }
+                                    }
+                                    break; 
                 }
-                if(fits) System.out.println("Fits");
             }
         }
+        /*
         // Print the word soup, debug
 	    System.out.println();
 	    for(int i = 0 ; i < size ; i++) {
@@ -240,7 +536,77 @@ public class WSGenerator {
 	    	}
 	    	System.out.println();
 	    }
+
+        System.out.println();
+        */
+        // Fill blank spaces with random letters
+        System.out.println();
+	    for(int i = 0 ; i < size ; i++) {
+	    	for(int j = 0 ; j < size ; j++) {
+	    		if(wordSoup[i][j] == 0) {
+	    			// Generate random char in uppercase
+                    Random r = new Random();
+                    char c = (char)(r.nextInt(26) + 'A');
+                    wordSoup[i][j] = c;
+                }
+	    	}
+	    }
+
+        /*
+        // Print the word soup, debug
+        System.out.println();
+	    System.out.println();
+	    for(int i = 0 ; i < size ; i++) {
+	    	for(int j = 0 ; j < size ; j++) {
+	    		if(wordSoup[i][j] != 0) {
+	    			System.out.print(wordSoup[i][j] + " ");
+	    		}else {
+	    			System.out.print(". ");
+	    		}
+	    	}
+	    	System.out.println();
+	    }
+        */
+
+        return wordSoup;
     }
+
+    // Save data in file
+    public static void saveData(ArrayList<String> dataList, char[][]wordSoup){
+      // Create File
+      try {
+        File myObj = new File("sdl_01.txt");
+        myObj.createNewFile();
+      } catch (IOException e) {
+        System.out.println("An error occurred.");
+        e.printStackTrace();
+      }
+      
+      // Write data to file
+      try {
+        FileWriter myWriter = new FileWriter("sdl_01.txt");
+        // Data writing
+        int size = wordSoup.length;
+        for(int i = 0 ; i < size ; i++) {
+	    	for(int j = 0 ; j < size ; j++) {
+	    		myWriter.write(wordSoup[i][j]);
+                System.out.print(wordSoup[i][j]);
+	    	}
+	    	myWriter.write("\n");
+            System.out.print("\n");
+	    }
+        size = dataList.size();
+        for(int i = 0 ; i < size ; i++) {
+            myWriter.write(dataList.get(i) + "\n");
+            System.out.print(dataList.get(i) + "\n");
+        }
+        myWriter.close();
+      } catch (IOException e) {
+        System.out.println("An error occurred.");
+        e.printStackTrace();
+      }
+    }
+
 
     public static void main(String[] args) {
         /*  options:
@@ -284,11 +650,13 @@ public class WSGenerator {
                         //termina o programa
                         return;
                     }
-                    if(arrOfStr[i].length() > size) size = arrOfStr[i].length() + 1;
+                    if(arrOfStr[i].length() > size) size = arrOfStr[i].length();
                     wordList.add(arrOfStr[i].toUpperCase());	// add words discovered and turn upper case
                 }
             }
-            wsGen( wordList, size);
+            if(wordList.size() > size) size = wordList.size();
+            char[][] wordSoup = wsGen( wordList, size + 2);
+            saveData(dataList,wordSoup);
             return;
         }
 
@@ -296,6 +664,11 @@ public class WSGenerator {
         if(argc == 4 && args[0].charAt(0) == '-' && args[0].charAt(1) == 'i' && args[2].charAt(0) == '-' && args[2].charAt(1) == 's'){
             String fileName = args[1];
             int size = Integer.parseInt(args[3]);
+            // Check max size
+            if(size > 40){
+                System.out.print("Max size 40");
+                return;
+            }
 
             ArrayList<String> wordList = new ArrayList<String>();
 
@@ -335,7 +708,8 @@ public class WSGenerator {
                     wordList.add(arrOfStr[i].toUpperCase());	// add words discovered and turn upper case
                 }
             }
-            wsGen( wordList, size);
+            char[][] wordSoup = wsGen( wordList, size);
+            saveData(dataList,wordSoup);
             return;
         }
         // Help message
